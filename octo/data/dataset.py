@@ -3,6 +3,7 @@ import inspect
 import json
 from typing import Callable, Mapping, Optional, Sequence, Tuple, Union
 
+
 from absl import logging
 import dlimp as dl
 import numpy as np
@@ -361,7 +362,9 @@ def make_dataset_from_rlds(
 
         return traj
 
-    builder = tfds.builder(name, data_dir=data_dir)
+    builder = tfds.builder_from_directory(data_dir)
+
+    # builder = tfds.builder(name, data_dir=data_dir)
 
     # load or compute dataset statistics
     if isinstance(dataset_statistics, str):

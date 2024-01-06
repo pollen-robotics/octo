@@ -54,7 +54,7 @@ def main(_):
     tf.config.set_visible_devices([], "GPU")
 
     # setup wandb for logging
-    wandb.init(name="finetune_aloha", project="octo")
+    wandb.init(name="finetune_reachy", project="octo")
 
     # load pre-trained model
     logging.info("Loading pre-trained model...")
@@ -67,13 +67,13 @@ def main(_):
     logging.info("Loading finetuning dataset...")
     dataset = make_single_dataset(
         dataset_kwargs=dict(
-            name="aloha_sim_cube_scripted_dataset",
+            name="ReachyDataset",
             data_dir=FLAGS.data_dir,
-            image_obs_keys={"primary": "top"},
+            image_obs_keys={"primary": "head"},
             state_obs_keys=["state"],
             language_key="language_instruction",
             action_proprio_normalization_type=NormalizationType.NORMAL,
-            absolute_action_mask=[True] * 14,
+            absolute_action_mask=[True] * 19,
         ),
         traj_transform_kwargs=dict(
             window_size=1,
@@ -120,7 +120,7 @@ def main(_):
     config["model"]["heads"]["action"] = ModuleSpec.create(
         L1ActionHead,
         pred_horizon=50,
-        action_dim=14,
+        action_dim=19,
         readout_key="readout_action",
     )
 
