@@ -14,12 +14,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 reachy = ReachySDK("localhost")
 logging.basicConfig(level=logging.INFO)
 
-model = OctoModel.load_pretrained("/data1/apirrone/octo/trainings/")
+model = OctoModel.load_pretrained("/data1/apirrone/octo/trainings2/")
 task = model.create_tasks(texts=["Grab the wooden cube"])
-
-print(model.get_pretty_spec())
-
-exit()
 
 
 def get_state():
@@ -58,14 +54,27 @@ def get_state():
         present_positions - model.dataset_statistics["proprio"]["mean"]
     ) / model.dataset_statistics["proprio"]["std"]
 
-    ret = np.array(present_positions, dtype=np.float32)
+    return present_positions
+    # ret = np.array(present_positions, dtype=np.float32)
+    # ret = np.expand_dims(ret, axis=0)
+    # ret = np.expand_dims(ret, axis=0)
+    # return np.array(ret, dtype=np.float32)
+
+
+def get_vel(prev_state, dt):
+    current_state = get_state()
+    vel = (current_state - prev_state) / dt
+    ret = np.array(vel, dtype=np.float32)
     ret = np.expand_dims(ret, axis=0)
     ret = np.expand_dims(ret, axis=0)
     return np.array(ret, dtype=np.float32)
+    # return vel
 
 
 def get_image():
-    im = cv2.resize(reachy.right_camera.last_frame, (256, 256))
+    im = cv2.cvtColor(
+        cv2.resize(reachy.right_camera.last_frame, (256, 256)), cv2.COLOR_RGB2BGR
+    )
     im = np.expand_dims(im, axis=0)
     im = np.expand_dims(im, axis=0)
     return np.array(im, dtype=np.uint8)
@@ -93,29 +102,47 @@ def set_joints(action):
     reachy.r_arm.r_wrist_roll.goal_position = right_action[6]
     reachy.r_arm.r_gripper.goal_position = right_action[7]
 
-    # reachy.head.neck_roll.goal_position = neck_action[0]
+    reachy.head.neck_roll.goal_position = 0
     reachy.head.neck_pitch.goal_position = 45
-    # reachy.head.neck_yaw.goal_position = neck_action[2]
+    reachy.head.neck_yaw.goal_position = 0
 
     # reachy.head.neck_roll.goal_position = neck_action[0]
     # reachy.head.neck_pitch.goal_position = neck_action[1]
     # reachy.head.neck_yaw.goal_position = neck_action[2]
 
 
+t0 = time.time()
+prev_state = get_state()
+dt = 1e-5
+prev_t = time.time()
 while True:
+    dt = time.time() - prev_t
+    im = get_image()
+    cv2.imshow("im", im[0][0])
+    cv2.waitKey(1)
+    state = get_state()
     observation = {
-        "image_primary": get_image(),
-        "proprio": get_state(),
+        "image_primary": im,
+        "proprio": state,
         "pad_mask": np.array([[True]]),
+        "timestep": np.array([[time.time() - t0]]),
+        "pad_mask_dict": {
+            "image_primary": np.array([[False]]),
+            "proprio": np.array([[False]]),
+            "timestep": np.array([[False]]),
+        },
     }
     actions = model.sample_actions(observation, task, rng=jax.random.PRNGKey(0))[0]
+
     # Unnormalize
     actions = (
         actions * model.dataset_statistics["action"]["std"]
         + model.dataset_statistics["action"]["mean"]
     )
+    prev_state = state
     for step in actions:
         set_joints(np.array(step))
-        time.sleep(0.02)
+        time.sleep(0.01)
 
-    time.sleep(0.5)
+    prev_t = time.time()
+    # time.sleep(0.01)

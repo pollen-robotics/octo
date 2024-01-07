@@ -402,7 +402,6 @@ class OctoModel:
         """Brief summary of the model's expected inputs and outputs."""
         # TODO: generalize this to print out proprio when it is being tokenized
         window_size = self.example_batch["observation"]["pad_mask"].shape[1]
-
         observation_space = {
             k: ("batch", "history_window", *v.shape[2:])
             for k, v in self.example_batch["observation"].items()
