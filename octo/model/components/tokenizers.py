@@ -104,19 +104,6 @@ class ImageTokenizer(nn.Module):
                 extracted_outputs.append(inputs[key])
             return jnp.concatenate(extracted_outputs, axis=-1)
 
-        print("===")
-        print("")
-        print("")
-        print("")
-        print("")
-        print(observations.keys())
-        print(tasks.keys())
-        print("")
-        print("")
-        print("")
-        print("")
-        print("===")
-
         obs_stack_keys = regex_filter(self.obs_stack_keys, sorted(observations.keys()))
         if len(obs_stack_keys) == 0:
             logging.info(
@@ -136,12 +123,6 @@ class ImageTokenizer(nn.Module):
                     logging.info(
                         f"No task inputs matching {k} were found. Replacing with zero padding."
                     )
-                    print("--")
-                    print("")
-                    print(k)
-                    print(tasks)
-                    print("")
-                    print("--")
                     tasks = flax.core.copy(
                         tasks, {k: jnp.zeros_like(observations[k][:, 0])}
                     )
