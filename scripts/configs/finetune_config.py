@@ -2,7 +2,7 @@ from ml_collections import ConfigDict
 from ml_collections.config_dict import FieldReference, placeholder
 
 
-def get_config(config_string="full,multimodal"):
+def get_config(config_string="head_only,language_conditioned"):
     mode, task = config_string.split(",")
     assert task in ["image_conditioned", "language_conditioned", "multimodal"]
     assert mode in ["full", "head_only", "head_mlp_only"]
@@ -14,18 +14,20 @@ def get_config(config_string="full,multimodal"):
     # and second image key should be the wrist view (None if not used)
 
     FINETUNING_KWARGS = {
-        "name": "bridge_dataset",
-        "data_dir": "./tests/debug_dataset",
-        "image_obs_keys": {"primary": "image_0", "wrist": None},
+        "name": "ReachyDataset",
+        "data_dir": "/home/apirrone/tensorflow_datasets/reachy_dataset/1.0.0/",
+        "image_obs_keys": {"primary": "head", "wrist": None},
         "state_obs_keys": ["state", None],
         "language_key": "language_instruction",
         "action_proprio_normalization_type": "normal",
         # All actions are relative deltas, except for the last one (gripper) which is absolute
         # Specifying this is only necessary if you want to predict > 1 step into the future
-        "absolute_action_mask": [False, False, False, False, False, False, True],
+        "absolute_action_mask": [True for _ in range(19)],
         # standardize_fn is dynamically loaded from a file
         # for example: "experiments/kevin/custom_standardization_transforms.py:aloha_dataset_transform"
-        "standardize_fn": "octo/data/oxe/oxe_standardization_transforms.py:bridge_dataset_transform",
+        # "standardize_fn": "octo/data/oxe/oxe_standardization_transforms.py:bridge_dataset_transform", # Needed ?
+        "standardize_fn": "/home/apirrone/Pollen/octo/octo/data/oxe/oxe_standardization_transforms.py:reachy_dataset_transform", # Needed ?
+        
         # If the default data loading speed is too slow, try these:
         # "num_parallel_reads": 8,  # for reading from disk / GCS
         # "num_parallel_calls": 16,  # for initial dataset construction
@@ -50,7 +52,7 @@ def get_config(config_string="full,multimodal"):
     window_size = FieldReference(default=1)
 
     config = dict(
-        pretrained_path=placeholder(str),
+        pretrained_path="hf://rail-berkeley/octo-small",
         pretrained_step=placeholder(int),
         batch_size=2,
         shuffle_buffer_size=10000,
@@ -58,7 +60,7 @@ def get_config(config_string="full,multimodal"):
         log_interval=100,
         eval_interval=5000,
         save_interval=5000,
-        save_dir=placeholder(str),
+        save_dir="/data1/apirrone/octo/trainings2",
         seed=42,
         wandb=dict(
             project="octo_finetune", group=placeholder(str), entity=placeholder(str)

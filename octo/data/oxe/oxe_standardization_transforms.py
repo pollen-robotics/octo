@@ -24,6 +24,11 @@ from octo.data.utils.data_utils import (
 )
 
 
+# TODO ?
+def reachy_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    return trajectory
+
+
 def bridge_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     # NOTE: this is not actually the official OXE copy of bridge, it is our own more up-to-date copy that you
     # can find at https://rail.eecs.berkeley.edu/datasets/bridge_release/data/tfds/
