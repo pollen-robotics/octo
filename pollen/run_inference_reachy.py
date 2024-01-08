@@ -11,7 +11,8 @@ from octo.model.octo_model import OctoModel
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-reachy = ReachySDK("localhost")
+# reachy = ReachySDK("localhost")
+reachy = ReachySDK("192.168.1.162")
 logging.basicConfig(level=logging.INFO)
 
 model = OctoModel.load_pretrained("/data1/apirrone/octo/trainings2/")
@@ -54,11 +55,11 @@ def get_state():
         present_positions - model.dataset_statistics["proprio"]["mean"]
     ) / model.dataset_statistics["proprio"]["std"]
 
-    return present_positions
-    # ret = np.array(present_positions, dtype=np.float32)
-    # ret = np.expand_dims(ret, axis=0)
-    # ret = np.expand_dims(ret, axis=0)
-    # return np.array(ret, dtype=np.float32)
+    # return present_positions
+    ret = np.array(present_positions, dtype=np.float32)
+    ret = np.expand_dims(ret, axis=0)
+    ret = np.expand_dims(ret, axis=0)
+    return np.array(ret, dtype=np.float32)
 
 
 def get_vel(prev_state, dt):
@@ -117,22 +118,36 @@ dt = 1e-5
 prev_t = time.time()
 while True:
     dt = time.time() - prev_t
+    print(dt)
     im = get_image()
-    cv2.imshow("im", im[0][0])
-    cv2.waitKey(1)
+    # cv2.imshow("im", im[0][0])
+    # cv2.waitKey(1)
     state = get_state()
+    # observation = {
+    #     "image_primary": im,
+    #     "proprio": state,
+    #     "pad_mask": np.array([[True]]),
+    #     "timestep": np.array([[time.time() - t0]]),
+    #     "pad_mask_dict": {
+    #         "image_primary": np.array([[False]]),
+    #         "proprio": np.array([[False]]),
+    #         "timestep": np.array([[False]]),
+    #     },
+    # }
     observation = {
         "image_primary": im,
         "proprio": state,
         "pad_mask": np.array([[True]]),
-        "timestep": np.array([[time.time() - t0]]),
-        "pad_mask_dict": {
-            "image_primary": np.array([[False]]),
-            "proprio": np.array([[False]]),
-            "timestep": np.array([[False]]),
-        },
+        # "timestep": np.array([[time.time() - t0]]),
+        # "pad_mask_dict": {
+        #     "image_primary": np.array([[False]]),
+        #     "proprio": np.array([[False]]),
+        #     "timestep": np.array([[False]]),
+        # },
     }
+    start = time.time()
     actions = model.sample_actions(observation, task, rng=jax.random.PRNGKey(0))[0]
+    print("Sampling actions took ", time.time() - start, " seconds")
 
     # Unnormalize
     actions = (
@@ -140,7 +155,7 @@ while True:
         + model.dataset_statistics["action"]["mean"]
     )
     prev_state = state
-    for step in actions:
+    for i, step in enumerate(actions):
         set_joints(np.array(step))
         time.sleep(0.01)
 
