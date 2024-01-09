@@ -27,8 +27,8 @@ flags.DEFINE_string(
 )
 flags.DEFINE_string("data_dir", None, "Path to finetuning dataset, in RLDS format.")
 flags.DEFINE_string("save_dir", None, "Directory for saving finetuning checkpoints.")
-flags.DEFINE_integer("batch_size", 32, "Batch size for finetuning.")
-flags.DEFINE_integer("n_steps", 10_000, "Number of batches to finetune for.")
+flags.DEFINE_integer("batch_size", 64, "Batch size for finetuning.")
+flags.DEFINE_integer("n_steps", 20_000, "Number of batches to finetune for.")
 
 flags.DEFINE_bool(
     "freeze_transformer",
@@ -69,8 +69,8 @@ def main(_):
             absolute_action_mask=[True] * new_action_dim,
         ),
         traj_transform_kwargs=dict(
-            window_size=1,
-            future_action_window_size=49,  # so we get 50 actions for our action chunk
+            window_size=2,
+            future_action_window_size=4,
         ),
         frame_transform_kwargs=dict(
             resize_size={"primary": (256, 256)},
@@ -114,7 +114,7 @@ def main(_):
     config["model"]["heads"]["action"] = ModuleSpec.create(
         L1ActionHead,
         # FIXME: 50 seems a bit long? how long does 50 steps correspond to for my dataset?
-        pred_horizon=10,
+        pred_horizon=4,
         action_dim=new_action_dim,
         readout_key="readout_action",
     )
