@@ -27,7 +27,7 @@ flags.DEFINE_string(
 )
 flags.DEFINE_string("data_dir", None, "Path to finetuning dataset, in RLDS format.")
 flags.DEFINE_string("save_dir", None, "Directory for saving finetuning checkpoints.")
-flags.DEFINE_integer("batch_size", 64, "Batch size for finetuning.")
+flags.DEFINE_integer("batch_size", 16, "Batch size for finetuning.")
 flags.DEFINE_integer("n_steps", 20_000, "Number of batches to finetune for.")
 
 flags.DEFINE_bool(
@@ -46,7 +46,11 @@ def main(_):
     tf.config.set_visible_devices([], "GPU")
 
     # setup wandb for logging
-    wandb.init(name="finetune_reachy", project="octo")
+    experiment_name = str(FLAGS.save_dir)
+    if experiment_name.endswith('/'):
+        experiment_name = experiment_name[:-1]
+    experiment_name = experiment_name.split("/")[-1]
+    wandb.init(name="finetune_reachy_"+str(experiment_name), project="octo")
     wandb.config.update(flags.FLAGS)
 
     # load pre-trained model
@@ -101,15 +105,17 @@ def main(_):
     config = pretrained_model.config
     del config["model"]["observation_tokenizers"]["wrist"]
     ###
-    config["model"]["observation_tokenizers"]["proprio"] = ModuleSpec.create(
-        LowdimObsTokenizer,
-        n_bins=256,
-        bin_type="normal",
-        # FIXME: check what low and high should be!
-        low=-2.0,
-        high=2.0,
-        obs_keys=["proprio"],
-    )
+
+    # config["model"]["observation_tokenizers"]["proprio"] = ModuleSpec.create(
+    #     LowdimObsTokenizer,
+    #     n_bins=256,
+    #     bin_type="normal",
+    #     # FIXME: check what low and high should be!
+    #     low=-2.0,
+    #     high=2.0,
+    #     obs_keys=["proprio"],
+    # )
+    
     # Fully override the old action head with a new one (for smaller changes, you can use update_module_config)
     config["model"]["heads"]["action"] = ModuleSpec.create(
         L1ActionHead,
